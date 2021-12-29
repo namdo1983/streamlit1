@@ -1,1 +1,0 @@
-web: call setup.bat && streamlit run demo1.py
