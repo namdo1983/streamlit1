@@ -5,10 +5,13 @@ s = requests.Session()
 
 
 def layout():
-    st.write('Check Access Domain...')
-    uploaded_file = st.file_uploader('Browser A File', type=['txt'])
+    st.header('Check Access Domain...')
+    uploaded_file = st.file_uploader('Select A File with *.TXT', type=['txt'])
+    if uploaded_file is None:
+        st.warning('Please select valid file')
     # print(dir(uploaded_file))
-    if st.button('Process') and uploaded_file is not None:
+    # st.warning('Please select a valid file before process')
+    elif st.button('Process') and uploaded_file is not None:
         # To read file as bytes:
         data = uploaded_file.readlines()
         # st.write(data)
@@ -28,7 +31,8 @@ def layout():
                 else:
                     print(item, r.status_code, r.reason)
                 st.write(idx, r.url, r.status_code, r.reason)
-
+        st.info('Process completed.')
+    
 
 
 def main():
