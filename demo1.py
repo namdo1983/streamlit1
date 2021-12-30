@@ -4,7 +4,9 @@ import pandas as pd
 from time import perf_counter
 
 s = requests.Session()
-
+st.set_page_config(
+        page_title="Check Access Domain",
+)
 # Use local CSS
 def local_css(file_name):
     with open(file_name) as f:
