@@ -31,7 +31,7 @@ def layout():
         """,
         unsafe_allow_html=True,
     )
-
+    st.markdown('<style>body{background-color: Blue;}</style>',unsafe_allow_html=True)
     st.header('Check Access Domain...')
     uploaded_file = st.file_uploader('Select A File with *.TXT', type=['txt'])
     if uploaded_file is None:
