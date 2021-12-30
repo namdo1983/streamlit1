@@ -1,19 +1,47 @@
 import streamlit as st
 import requests
 import pandas as pd
+import base64
+from os.path import join
+from pathlib import Path
 from time import perf_counter
 
 s = requests.Session()
+ROOT_DIR = Path(__file__).resolve().parent
+print(ROOT_DIR)
+#Page Title
 st.set_page_config(
-        page_title="Check Access Domain",
+        page_title="Check Access Domain", layout='centered'
 )
-# Use local CSS
+
+@st.cache(allow_output_mutation=True)
+def img_to_bytes(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+def set_png_as_page_bg(png_file):
+    bin_str = img_to_bytes(png_file)
+    page_bg_img = '''
+    <style>
+    body {
+    background-image: url("data:image/png;base64,%s");
+    background-size: cover;
+    }
+    </style>
+    ''' % bin_str
+    
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+    return
+
+
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 def layout():
+    # Use local CSS
     local_css("style/style.css")
     # Load Animation
     animation_symbol = "❄"
@@ -31,7 +59,8 @@ def layout():
         """,
         unsafe_allow_html=True,
     )
-    st.markdown('<style>body{background-color: Blue;}</style>',unsafe_allow_html=True)
+
+    set_png_as_page_bg(r'D:\python\streamlit_python\pine-tree.png')
     st.header('Check Access Domain...')
     uploaded_file = st.file_uploader('Select A File with *.TXT', type=['txt'])
     if uploaded_file is None:
