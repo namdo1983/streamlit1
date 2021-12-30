@@ -67,7 +67,6 @@ def layout():
             data = uploaded_file.readlines()
             my_table = check_url(data)
             df = pd.DataFrame(my_table)
-            print(df.columns)
             df.columns=('No.', 'Domain', 'Result')
             df['Your ISP'] = my_isp
             if '::' not in ip:
@@ -80,7 +79,7 @@ def layout():
             # st.download_button('Export To Excel', data=df, file_name='rp.xlsx')
             end = perf_counter() - start
             st.success(f'Process completed in {end:.2f} seconds.')
-            return df
+
 
 @st.cache(suppress_st_warning=True, show_spinner=False)
 def check_url(data):
