@@ -94,7 +94,7 @@ def check_url(data):
             new_e = str(e)
             new_e = new_e.split(':')[0]
             # err = {f'{idx}. {item.decode("utf-8").strip()}': str(e)}
-            err = idx, str(item.decode("utf-8").strip()), str(new_e)
+            err = idx, str(item.decode("utf-8").strip()), "This site can't be reached"
             # st.error(err)
             my_table.append(err)
         else:
