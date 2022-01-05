@@ -5,10 +5,12 @@ import speedtest
 from datetime import datetime
 from time import perf_counter
 from PIL import Image
-import base64
+import os
 
 
 s = requests.Session()
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 my_headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
 s.headers.update(my_headers)
 
@@ -170,7 +172,7 @@ def main():
             page_title="Check Access Domain", layout='wide'
     )
 
-    image = Image.open(r'D:\python\streamlit_python\banner-noel.webp')
+    image = Image.open('banner-noel.webp')
     st.image(image, use_column_width=True)
     
     try:
