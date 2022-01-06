@@ -4,7 +4,6 @@ import pandas as pd
 import speedtest
 from datetime import datetime
 from time import perf_counter
-from PIL import Image
 import os
 
 
@@ -64,15 +63,16 @@ def convert_df(df):
 def layout():
     ip, my_isp = get_network_name()
     print(my_isp)
-    st.title('Please import a file...')
-    st.text('Example: https://google.com or google.com')
+    st.title('Please import a file with valid domain to check access the page...')
+    st.text('Example valid domain includes: https://google.com or google.com or www.google.com')
     uploaded_file = st.file_uploader('Select A File with *.TXT', type=['txt'])
+
     if uploaded_file is None:
         st.warning('Please select valid file')
-    # st.warning('Please select a valid file before process')
+
     elif st.button('Process') and uploaded_file is not None:
-        # To read file as bytes:
-        with st.spinner('Please wait...'):
+        with st.spinner('Please wait. Checking...'):
+
             start = perf_counter()
             data = uploaded_file.readlines()
             my_table = check_url(data)
@@ -88,34 +88,39 @@ def layout():
 
             # Download result as excel file
             csv = convert_df(df)
-            st.download_button('Download Results As CSV', csv, f"{date_object}_file.csv", "text/csv")
-
+            
             end = perf_counter() - start
             st.success(f'Process completed in {end:.2f} seconds.')
 
+            st.download_button('Download Results As CSV', csv, f"{date_object}_file.csv", "text/csv",)
 
+@st.cache(suppress_st_warning=True, show_spinner=False)
 def check_url(data):
     my_table = []
-    # 230 s
     for idx, item in enumerate(data, start=1):
         if b'http' not in item:
-            item = b'https://' + item
+            item = b'http://' + item
         try:
             r = s.get(item.strip(), headers=my_headers, timeout=5)
             r.encoding='utf-8'
             # print(r.text)
-        except Exception as e:
+        except requests.exceptions.ConnectionError as e:
             # print(e)
             new_e = str(e)
             new_e = new_e.split(': ')[-1]
             # err = {f'{idx}. {item.decode("utf-8").strip()}': str(e)}
-            err = idx, str(item.decode("utf-8").strip()), "Hmmm… can't reach this page" # "This site can't be reached"
-            # st.error(err)
+            err = idx, str(item.decode("utf-8").strip()), "This site can't be reached" # "This site can't be reached"
+            my_table.append(err)
+        except requests.exceptions.Timeout as ct:
+            # print(e)
+            new_e = str(ct)
+            # new_e = new_e.split(': ')[-1]
+            err = idx, str(item.decode("utf-8").strip()), new_e # "This site can't be reached"
             my_table.append(err)
         else:
             if r.ok:
-                print('Checking domain expired...')
-                check_domain_results(my_table, idx, r)
+                print(f'Checking domain -----> {r.url}')
+                check_domain_results(my_table, idx, str(item.decode("utf-8").strip()), r)
             elif r.status_code == 503 and 'Checking your browser before accessing' in r.text:
                 content = idx, r.url, "DDoS protection by Cloudflare"
                 my_table.append(content)
@@ -128,41 +133,43 @@ def check_url(data):
 
             content = idx, r.url, r.reason
             my_table.append(content)
+
     return my_table
 
-def check_domain_results(my_table, idx, r):
+def check_domain_results(my_table, idx, item, r):
     if 'This domain has expired. Is this your domain?' in r.text:
-        content = idx, r.url, 'This domain has expired. Is this your domain?'
+        content = idx, item, 'This domain has expired. Is this your domain?'
         my_table.append(content)
     elif '404 Page' in r.text:
-        content = idx, r.url, "404 Page"
+        content = idx, item, "404 Page"
         my_table.append(content)
     elif 'This premium domain has expired' in r.text:
-        content = idx, r.url, "This premium domain has expired"
+        content = idx, item, "This premium domain has expired"
         my_table.append(content)
     elif "AN NINH" in r.text:
-        content = idx, r.url, "BỘ CÔNG AN"
+        content = idx, item, "BỘ CÔNG AN"
         my_table.append(content)
     elif "Why purchase this domain with Epik?" in r.text:
-        content = idx, r.url, "Why purchase this domain with Epik?"
+        content = idx, item, "Why purchase this domain with Epik?"
         my_table.append(content)
     elif "Registered at Namecheap.com" in r.text:
-        content = idx, r.url, "Registered at Namecheap.com"
+        content = idx, item, "Registered at Namecheap.com"
         my_table.append(content)
     elif "Domain parked by OnlyDomains" in r.text:
-        content = idx, r.url, "Domain parked by OnlyDomains"
+        content = idx, item, "Domain parked by OnlyDomains"
         my_table.append(content)
     elif "This domain is parked free of charge with NameSilo.com" in r.text:
-        content = idx, r.url, "This domain is parked free of charge with NameSilo.com"
+        content = idx, item, "This domain is parked free of charge with NameSilo.com"
         my_table.append(content)
     elif "Get WordPress" in r.text:
-        content = idx, r.url, "Get WordPress"
+        content = idx, item, "Domain WordPress"
         my_table.append(content)
     elif "mobifone.vn/typing-wrong" in r.text:
-        content = idx, r.url, "404 Góc Trái"
+        content = idx, item, "404 mobifone"
         my_table.append(content)
-    elif len(r.history) >= 2:
-        r_301 = idx, r.url, f'Access OK => Redirect: {r.url}'
+    # elif len(r.history) >= 2:
+    elif r.history:
+        r_301 = idx, item, f'OK. Redirect to -----> {r.url}'
         my_table.append(r_301)
 
 
@@ -171,9 +178,6 @@ def main():
     st.set_page_config(
             page_title="Check Access Domain", layout='wide'
     )
-
-    image = Image.open('banner-noel.webp')
-    st.image(image, use_column_width=True)
     
     try:
         load_snow_animate()
