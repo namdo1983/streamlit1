@@ -72,7 +72,6 @@ def layout():
 
     elif st.button('Process') and uploaded_file is not None:
         with st.spinner('Please wait. Checking...'):
-
             start = perf_counter()
             data = uploaded_file.readlines()
             my_table = check_url(data)
@@ -130,9 +129,9 @@ def check_url(data):
             elif r.status_code == 522 and 'Connection timed out' in r.text:
                 content = idx, r.url, 'Error 522'
                 my_table.append(content)
-
-            content = idx, r.url, r.reason
-            my_table.append(content)
+            else:
+                content = idx, r.url, r.reason
+                my_table.append(content)
 
     return my_table
 
