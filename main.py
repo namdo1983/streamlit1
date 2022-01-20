@@ -1,7 +1,6 @@
 import streamlit as st
-import requests
 import pandas as pd
-from playwright.sync_api import sync_playwright
+from requests_html import HTMLSession
 from pathlib import Path
 from time import perf_counter
 import speedtest
@@ -13,7 +12,7 @@ BASE_DIR = Path(__file__).parent
 date_object = datetime.now().strftime("%d_%B_%Y_%H_%M_%S")
 headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36'}
-s = requests.Session()
+s = HTMLSession()
 
 
 def get_network_name():
@@ -30,26 +29,24 @@ def get_network_name():
 def layout():
     ip, my_isp = get_network_name()
     print(my_isp)
-    st.subheader('Free Broken Link Checker.')
+    st.title('Free Broken Link Checker.')
     input_text = st.text_input(
-        label='Check your site for broken links in seconds.', placeholder='Enter domain or URL')
-    if 'https://' not in input_text and input_text is not None:
-        st.warning('Please enter valid URLs')
+        label='Check your site for broken links in seconds.', placeholder='Enter domain or URL', max_chars=255)
+    if not input_text.startswith('http') or len(input_text) >= 255:
+        st.warning('Please enter valid Domain or URL or <= 255 Characters.')
 
-    elif st.button('Check broken links') and 'https://' in input_text:
+    elif st.button('Check broken links') and input_text.startswith('http') and len(input_text) < 255:
         with st.spinner('Please wait. Checking...'):
             start = perf_counter()
             data = input_text.strip()
 
             my_table = []
-            # for item in data:
-            # data = data.decode('utf-8')
             if 'http' not in data:
                 data = 'http://' + data
             my_table, URLs = check_broken_links(data)
 
             if my_table == []:
-                st.warning('There no data to check.')
+                st.warning('No broken link found.')
 
             elif my_table is not None:
                 print(my_table)
@@ -71,9 +68,9 @@ def layout():
                 st.success(f'Process completed in {end:.2f} seconds.')
 
 
-@st.cache(suppress_st_warning=True, show_spinner=False)
-def convert_df(df):
-    return df.to_csv(index=False).encode('utf-8')
+# @st.cache(suppress_st_warning=True, show_spinner=False)
+# def convert_df(df):
+#     return df.to_csv(index=False).encode('utf-8')
 
 
 @st.cache(suppress_st_warning=True, show_spinner=False)
@@ -81,50 +78,41 @@ def check_broken_links(url):
     # url = 'https://nbet.win/'
     total_urls = []
     my_result = []
-    with sync_playwright() as p:
-        br = p.chromium.launch()
-        page = br.new_page()
-        try:
-            r = s.get(url, headers=headers, timeout=5)
+    try:
+        r = s.get(url)
+    except:
+        content = url, 'This site can not be reached.'
+        my_result.append(content)
+    else:
+        if r.ok:
+            pages = r.html.find('[href]')
+            print(pages)
+            for link in pages:
+                print(link.attrs['href'])
+                total_urls.append(link.attrs['href'])
 
-        except:
-            content = url, 'This site can not be reached.'
-            my_result.append(content)
+            pages = r.html.find('[src]')
+            for link in pages:
+                print(link.attrs['src'])
+                total_urls.append(link.attrs['src'])
         else:
-            if r.ok:
-                page.goto(url)
-                pages = page.query_selector_all('[href]')
+            content = r.url, str(r.status_code) + ' ' + r.reason
+            my_result.append(content)
 
-                for item in pages:
-                    my_page = item.get_attribute('href')
-                    if 'https://' in my_page:
-                        print(my_page)
-                        total_urls.append(my_page)
-                images = page.query_selector_all('[src]')
-                for item in images:
-                    src = item.get_attribute('src')
-                    # print(src)
-                    if 'https://' in src:
-                        total_urls.append(src)
-
-                for url in list(set(total_urls)):
-                    try:
-                        r = s.get(url, headers=headers, timeout=5)
-                        print('Checking...', r.url, r.status_code)
-                    except requests.exceptions.RequestException as e:
-                        pass
-                    else:
-                        if not r.ok:
-                            print('Failed...', r.url, r.status_code)
-                            content = r.url, str(
-                                r.status_code) + ' ' + r.reason
-                            my_result.append(content)
-            else:
-                content = r.url, str(r.status_code) + ' ' + r.reason
+    for url in list(set(total_urls)):
+        try:
+            r = s.get(url)
+            print('Checking...', r.url, r.status_code)
+        except:
+            pass
+        else:
+            if not r.ok:
+                print('Failed...', r.url, r.status_code)
+                content = r.url, str(
+                    r.status_code) + ' ' + r.reason
                 my_result.append(content)
-        br.close()
 
-    print(total_urls)
+
     return my_result, len(total_urls)
 
 
@@ -135,7 +123,7 @@ def main():
     try:
         layout()
     finally:
-        print('Closed Browsers Completed.')
+        print('Process Completed.')
 
 
 if __name__ == '__main__':
