@@ -63,6 +63,8 @@ def layout():
                     df['IPv4'] = ip
                 else:
                     df['IPv6'] = ip
+
+                df.index += 1
                 st.write(df)
                 end = perf_counter() - start
                 st.success(f'Process completed in {end:.2f} seconds.')
