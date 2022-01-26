@@ -114,7 +114,6 @@ def check_broken_links(url):
                     r.status_code) + ' ' + r.reason
                 my_result.append(content)
 
-
     return my_result, len(total_urls)
 
 
